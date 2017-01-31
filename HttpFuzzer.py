@@ -23,76 +23,76 @@ import imghdr
 import mimetypes
 
 class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScannerInsertionPointProvider):
-    
+
     def	registerExtenderCallbacks(self, callbacks):
         print "Extension loaded!"
         self._callbacks = callbacks
-        
+
         self._helpers = callbacks.getHelpers()
-        
+
         callbacks.setExtensionName("HttpFuzzer")
 
         #Abusing functionality here :(
         #I would have prefered to have it implemented as an active scan module
         callbacks.registerScannerInsertionPointProvider(self)
-        
+
         self._newline = "\r\n"
-        
+
         #Options:
         self._random_mutations = 0
         self._known_fuzz_string_mutations = 0
         self._custom_fuzz_strings = None
-        
+
         self._known_fuzz_strings = [
-            "A" * 256, 
-            "A" * 1024, 
-            "A" * 4096, 
-            "A" * 20000, 
+            "A" * 256,
+            "A" * 1024,
+            "A" * 4096,
+            "A" * 20000,
             "A" * 65535,
-            "%x" * 256, 
-            "%n" * 256 , 
-            "%s" * 256, 
-            "%s%n%x%d" * 256, 
-            "%s" * 256, 
-            "%.1024d", 
-            "%.2048d", 
-            "%.4096d", 
-            "%.8200d", 
-            "%99999999999s", 
-            "%99999999999d", 
-            "%99999999999x", 
-            "%99999999999n", 
-            "%99999999999s" * 200, 
-            "%99999999999d" * 200, 
-            "%99999999999x" * 200, 
-            "%99999999999n" * 200, 
-            "%08x" * 100, 
+            "%x" * 256,
+            "%n" * 256 ,
+            "%s" * 256,
+            "%s%n%x%d" * 256,
+            "%s" * 256,
+            "%.1024d",
+            "%.2048d",
+            "%.4096d",
+            "%.8200d",
+            "%99999999999s",
+            "%99999999999d",
+            "%99999999999x",
+            "%99999999999n",
+            "%99999999999s" * 200,
+            "%99999999999d" * 200,
+            "%99999999999x" * 200,
+            "%99999999999n" * 200,
+            "%08x" * 100,
             "%%20s" * 200,
             "%%20x" * 200,
             "%%20n" * 200,
-            "%%20d" * 200, 
-            "%#0123456x%08x%x%s%p%n%d%o%u%c%h%l%q%j%z%Z%t%i%e%g%f%a%C%S%08x%%#0123456x%%x%%s%%p%%n%%d%%o%%u%%c%%h%%l%%q%%j%%z%%Z%%t%%i%%e%%g%%f%%a%%C%%S%%08x", 
-            "'", 
-            "\\", 
-            "<", 
-            "+", 
-            "%", 
-            "$", 
+            "%%20d" * 200,
+            "%#0123456x%08x%x%s%p%n%d%o%u%c%h%l%q%j%z%Z%t%i%e%g%f%a%C%S%08x%%#0123456x%%x%%s%%p%%n%%d%%o%%u%%c%%h%%l%%q%%j%%z%%Z%%t%%i%%e%%g%%f%%a%%C%%S%%08x",
+            "'",
+            "\\",
+            "<",
+            "+",
+            "%",
+            "$",
             "`"
         ]
-        
+
         #End Options
-        
+
         #UI START
-        
+
         self._main_jtabedpane = JTabbedPane()
-        
+
         #Setup the options
         self._optionsJPanel = JPanel()
         gridBagLayout = GridBagLayout();
         gbc = GridBagConstraints()
         self._optionsJPanel.setLayout(gridBagLayout)
-        
+
         self.JLabel_random_mutations = JLabel("Number of random bit and byte mutations: ")
         gbc.gridy += 1
         gbc.gridx = 0
@@ -103,7 +103,7 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
         self._optionsJPanel.add(self.JTextField_random_mutations, gbc)
         callbacks.customizeUiComponent(self.JLabel_random_mutations)
         callbacks.customizeUiComponent(self.JTextField_random_mutations)
-        
+
         self.JLabel_known_fuzz_string_mutations = JLabel("Number of tests with known fuzzing strings: ")
         gbc.gridy += 1
         gbc.gridx = 0
@@ -114,7 +114,7 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
         self._optionsJPanel.add(self.JTextField_known_fuzz_string_mutations, gbc)
         callbacks.customizeUiComponent(self.JLabel_known_fuzz_string_mutations)
         callbacks.customizeUiComponent(self.JTextField_known_fuzz_string_mutations)
-        
+
         self._filepath = ''
         self.JLabel_filepath = JLabel("Replacement for known fuzzing strings (one per line): ")
         gbc.gridy += 1
@@ -132,7 +132,7 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
         callbacks.customizeUiComponent(self.JLabel_filepath)
         callbacks.customizeUiComponent(self.JTextField_filepath)
         callbacks.customizeUiComponent(self.FileChooserButton_filepath)
-        
+
         about = "<html>"
         about += "Author: floyd, @floyd_ch, http://www.floyd.ch<br>"
         about += "<br>"
@@ -163,14 +163,14 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
 
         # add the custom tab to Burp's UI
         callbacks.addSuiteTab(self)
-        
+
         #UI END
-        print "Extension registered!"        
-    
+        print "Extension registered!"
+
     #
     # UI: implement ITab
     #
-    
+
     def getTabCaption(self):
         return "HttpFuzzer"
 
@@ -196,7 +196,7 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
                 print "ERROR: Couldn't read file"
                 self._custom_fuzz_strings = None
         print filepath
-        
+
         try:
             self._random_mutations = int(self.JTextField_random_mutations.getText())
         except:
@@ -208,10 +208,10 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
             print "Exception,", self.JTextField_known_fuzz_string_mutations.getText(), "is not numeric"
             self._known_fuzz_string_mutations = 0
         print self._random_mutations, self._known_fuzz_string_mutations
-    
+
     def actionPerformed(self, actionEvent):
         self.insertUpdate(None)
-    
+
     #TODO: Is there another way to simply say "each active scanned HTTP request once"?
     #it seems not: https://support.portswigger.net/customer/en/portal/questions/16776337-confusion-on-insertionpoints-active-scan-module?new=16776337
     #So we are going to abuse a functionality of Burp called IScannerInsertionPoint
@@ -219,7 +219,7 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
     #this is an ugly hack as the percentage of active scan is simply stuck until this plugin is done
     def getInsertionPoints(self, baseRequestResponse):
         self.do_fuzzing(baseRequestResponse)
-    
+
     def do_fuzzing(self, baseRequestResponse):
         req = FloydsHelpers.jb2ps(baseRequestResponse.getRequest())
         fuzz_strings = self._custom_fuzz_strings or self._known_fuzz_strings
@@ -252,15 +252,14 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
                 print e
 
     def _send(self, baseRequestResponse, req):
-        offset = self._helpers.analyzeRequest(baseRequestResponse).getBodyOffset()
-        method = self._helpers.analyzeRequest(baseRequestResponse).getMethod()
+        offset = self._helpers.analyzeRequest(req).getBodyOffset()
         status_headers, body = req[:offset], req[offset:]
-        # We should not provide Content-Length on GET requests.
-        if method != "GET":
+        # We should only provide Content-Length when we have a body.
+        if body:
             status_headers = FloydsHelpers.fix_http_content_length(status_headers, len(body), self._newline)
         new_req = status_headers + body
         self._callbacks.makeHttpRequest(baseRequestResponse.getHttpService(), new_req)
-    
+
 class FloydsHelpers(object):
     @staticmethod
     def fix_http_content_length(headers, length, newline):
@@ -274,18 +273,18 @@ class FloydsHelpers(object):
             print "WARNING: Couldn't find Content-Length header in request, maybe it got destroyed with fuzzing? Simply adding this header."
             h.insert(1, "Content-Length: "+str(length))
             return newline.join(h)
-    
+
     @staticmethod
     def jb2ps(arr):
         return ''.join(map(lambda x: chr(x % 256), arr))
 
 class FileChooserButton(JButton, ActionListener):
-    
+
     def setup(self, field, button_name):
         self.field = field
         self.addActionListener(self)
         self.setText(button_name)
-    
+
     def actionPerformed(self, actionEvent):
         chooser = JFileChooser()
         #chooser.setCurrentDirectory(".")
