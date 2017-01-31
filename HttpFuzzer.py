@@ -253,8 +253,11 @@ class BurpExtender(IBurpExtender, ITab, DocumentListener, ActionListener, IScann
 
     def _send(self, baseRequestResponse, req):
         offset = self._helpers.analyzeRequest(baseRequestResponse).getBodyOffset()
+        method = self._helpers.analyzeRequest(baseRequestResponse).getMethod()
         status_headers, body = req[:offset], req[offset:]
-        status_headers = FloydsHelpers.fix_http_content_length(status_headers, len(body), self._newline)
+        # We should not provide Content-Length on GET requests.
+        if method != "GET":
+            status_headers = FloydsHelpers.fix_http_content_length(status_headers, len(body), self._newline)
         new_req = status_headers + body
         self._callbacks.makeHttpRequest(baseRequestResponse.getHttpService(), new_req)
     
